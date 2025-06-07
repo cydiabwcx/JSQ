@@ -1,105 +1,16 @@
----
-workflows:
-  ios-workflow:
-    name: iOS Native App
-    max_build_duration: 120
-    instance_type: mac_mini_m2
-    environment:
-      vars:
-        BUNDLE_ID: "com.cydiabwcx.app.JSQ"
-        XCODE_PROJECT: "JSQ.xcodeproj"
-        XCODE_SCHEME: "JSQ"
-      groups:
-        - app_store_credentials
-      xcode: latest
-      cocoapods: default
-    triggering:
-      events:
-        - push
-        - tag
-        - pull_request
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-          source: true
-        - pattern: 'develop'
-          include: true
-          source: true
-    scripts:
-      - name: 设置 Keychain 用于代码签名
-        script: |
-          keychain initialize
-      
-      - name: 获取签名文件
-        script: |
-          # 设置详细日志输出
-          set -x
-          
-          echo "获取签名文件和配置文件..."
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
-            --create
-          
-          # 验证配置文件是否存在
-          echo "验证配置文件..."
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          
-          # 显示证书信息
-          echo "显示可用证书..."
-          security find-identity -v -p codesigning || true
-      
-      - name: 设置代码签名设置
-        script: |
-          xcode-project use-profiles
-      
-      - name: 构建 iOS 应用
-        script: |
-          # 使用 xcode-project 命令进行自动签名构建
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME" \
-            --config "Release"
-    
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    
-    publishing:
-      email:
-        recipients:
-          - gaozhenaax@163.com
-        notify:
-          success: true
-          failure: true
-      
-      app_store_connect:
-        # 使用环境变量认证
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: false
-        submit_to_app_store: false
-scripts:
-  - name: 设置 Keychain 用于代码签名
-    script: |
-      keychain initialize
-  
-  - name: 获取签名文件
-    script: |
-      # 设置详细日志输出
-      set -x
-      
-      # 列出现有证书
-      echo "列出现有证书..."
-      app-store-connect certificates list --type IOS_DISTRIBUTION
-      
-      # 撤销现有的iOS Distribution证书（如果存在）
-      echo "撤销现有证书..."
-      app-store-connect certificates delete --certificate-id BSQN86SNL8 || echo "证书撤销完成或不存在"
-      
-      # 创建新的签名文件和证书
-      echo "创建新的签名文件和证书..."
-      app-store-connect fetch-signing-files $BUNDLE_ID \
-        --type IOS_APP_STORE \
-        --create
+Using Xcode 16.3 (16E140)
+Check JSQ.xcodeproj build settings
+Execute "xcodebuild -project JSQ.xcodeproj -scheme JSQ -config Release -showBuildSettings"
+
+Archive JSQ.xcodeproj
+Execute "xcodebuild -project JSQ.xcodeproj -scheme JSQ -config Release -archivePath /Users/builder/clone/build/ios/xcarchive/JSQ_rf4oua6n.xcarchive archive COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGN_STYLE=Manual"
+
+
+❌  /Users/builder/clone/JSQ.xcodeproj: error: "JSQ" requires a provisioning profile. Select a provisioning profile in the Signing & Capabilities editor. (in target 'JSQ' from project 'JSQ')
+
+
+Failed to archive JSQ.xcodeproj
+
+
+Build failed :|
+Step 5 script `构建 iOS 应用` exited with status code 65
