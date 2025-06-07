@@ -1,0 +1,69 @@
+workflows:
+  ios-workflow:
+    name: iOS Native App
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        # 在 Codemagic UI 中添加环境变量组
+        - app_store_credentials # APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
+      vars:
+        BUNDLE_ID: "com.cydiabwcx.JSQ"
+        XCODE_WORKSPACE: "JSQ.xcodeproj" # 使用 .xcworkspace 如果您有 CocoaPods
+        XCODE_SCHEME: "JSQ"
+      xcode: latest # 使用最新版本的 Xcode
+      cocoapods: default
+    triggering:
+      events:
+        - push
+        - tag
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+        - pattern: 'develop'
+          include: true
+          source: true
+    scripts:
+      - name: 设置 Keychain 用于代码签名
+        script: |
+          keychain initialize
+      
+      - name: 获取签名文件
+        script: |
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+      
+      - name: 使用系统默认 Keychain
+        script: |
+          keychain add-certificates
+      
+      - name: 设置代码签名设置
+        script: |
+          xcode-project use-profiles
+      
+      - name: 构建 iOS 应用
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    
+    publishing:
+      email:
+        recipients:
+          - cydiabwcx@example.com # 替换为您的邮箱
+        notify:
+          success: true
+          failure: true
+      
+      app_store_connect:
+        auth: integration # 使用 App Store Connect 集成
+        
+        # 可选：自动提交审核
+        # submit_to_testflight: false
+        # submit_to_app_store: false
