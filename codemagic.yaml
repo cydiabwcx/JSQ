@@ -85,3 +85,26 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: false
+scripts:
+  - name: 设置 Keychain 用于代码签名
+    script: |
+      keychain initialize
+  
+  - name: 获取签名文件
+    script: |
+      # 设置详细日志输出
+      set -x
+      
+      # 列出现有证书
+      echo "列出现有证书..."
+      app-store-connect certificates list --type IOS_DISTRIBUTION
+      
+      # 撤销现有的iOS Distribution证书（如果存在）
+      echo "撤销现有证书..."
+      app-store-connect certificates delete --certificate-id BSQN86SNL8 || echo "证书撤销完成或不存在"
+      
+      # 创建新的签名文件和证书
+      echo "创建新的签名文件和证书..."
+      app-store-connect fetch-signing-files $BUNDLE_ID \
+        --type IOS_APP_STORE \
+        --create
