@@ -35,9 +35,18 @@ workflows:
       
       - name: 获取签名文件
         script: |
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
-            --create
+          # 首先尝试获取现有的签名文件（不创建新的）
+          if ! app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE; then
+            echo "无法获取现有签名文件，尝试创建新的..."
+            # 如果失败，删除可能冲突的证书并重新创建
+            app-store-connect certificates list --type IOS_DISTRIBUTION | grep -q $BUNDLE_ID && \
+            app-store-connect certificates revoke --type IOS_DISTRIBUTION --bundle-id $BUNDLE_ID || true
+            
+            # 创建新的签名文件
+            app-store-connect fetch-signing-files $BUNDLE_ID \
+              --type IOS_APP_STORE \
+              --create
+          fi
       
       - name: 设置代码签名设置
         script: |
