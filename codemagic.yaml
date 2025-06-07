@@ -7,7 +7,7 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.cydiabwcx.app.JSQ"
-        XCODE_WORKSPACE: "JSQ.xcodeproj"
+        XCODE_PROJECT: "JSQ.xcodeproj"
         XCODE_SCHEME: "JSQ"
       groups:
         - app_store_credentials
@@ -39,7 +39,7 @@ workflows:
           echo "验证API密钥权限..."
           app-store-connect certificates list --type IOS_DISTRIBUTION || true
           
-          # 尝试创建新证书（方法1：直接创建）
+          # 尝试创建新证书
           echo "尝试创建新的iOS Distribution证书..."
           if app-store-connect certificates create --type IOS_DISTRIBUTION; then
             echo "证书创建成功"
@@ -47,7 +47,7 @@ workflows:
             echo "证书创建失败，尝试其他方法"
           fi
           
-          # 获取签名文件（方法2：强制创建）
+          # 获取签名文件
           echo "获取签名文件..."
           if ! app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create; then
             echo "自动签名失败，尝试使用现有证书..."
@@ -61,7 +61,7 @@ workflows:
       - name: 构建 iOS 应用
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     
     artifacts:
