@@ -9,10 +9,6 @@ workflows:
         BUNDLE_ID: "com.cydiabwcx.app.JSQ"
         XCODE_WORKSPACE: "JSQ.xcodeproj"
         XCODE_SCHEME: "JSQ"
-        # 确保使用正确的环境变量名
-        APP_STORE_CONNECT_API_KEY: $APP_STORE_CONNECT_API_KEY
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
       xcode: latest
       cocoapods: default
     triggering:
@@ -32,18 +28,12 @@ workflows:
         script: |
           keychain initialize
       
-      - name: 获取签名文件 (包含私钥)
+      - name: 获取签名文件
         script: |
-          # 确保私钥文件存在
-          echo "$APP_STORE_CONNECT_API_KEY" > api_key.p8
-          
-          # 使用私钥获取签名文件
+          # 使用简化的命令获取签名文件
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$(pwd)/api_key.p8"
+            --create
       
       - name: 使用系统默认 Keychain
         script: |
@@ -73,6 +63,6 @@ workflows:
           failure: true
       
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        private_key: $APP_STORE_CONNECT_PRIVATE_KEY
