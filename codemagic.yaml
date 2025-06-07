@@ -1,16 +1,17 @@
----
 workflows:
   ios-workflow:
     name: iOS Native App
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      groups:
-        - app_store_credentials
       vars:
-        BUNDLE_ID: com.cydiabwcx.app.JSQ
-        XCODE_WORKSPACE: JSQ.xcodeproj
-        XCODE_SCHEME: JSQ
+        BUNDLE_ID: "com.cydiabwcx.JSQ"
+        XCODE_WORKSPACE: "JSQ.xcodeproj"
+        XCODE_SCHEME: "JSQ"
+        # 确保使用正确的环境变量名
+        APP_STORE_CONNECT_API_KEY: $APP_STORE_CONNECT_API_KEY
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
       xcode: latest
       cocoapods: default
     triggering:
@@ -19,35 +20,49 @@ workflows:
         - tag
         - pull_request
       branch_patterns:
-        - pattern: main
+        - pattern: 'main'
           include: true
           source: true
-        - pattern: develop
+        - pattern: 'develop'
           include: true
           source: true
     scripts:
       - name: 设置 Keychain 用于代码签名
         script: |
           keychain initialize
-      - name: 获取签名文件
-        script: >
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE
-          --create
+      
+      - name: 获取签名文件 (包含私钥)
+        script: |
+          # 确保私钥文件存在
+          echo "$APP_STORE_CONNECT_API_KEY" > api_key.p8
+          
+          # 使用私钥获取签名文件
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$(pwd)/api_key.p8"
+      
       - name: 使用系统默认 Keychain
         script: |
           keychain add-certificates
+      
       - name: 设置代码签名设置
         script: |
           xcode-project use-profiles
+      
       - name: 构建 iOS 应用
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+    
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    
     publishing:
       email:
         recipients:
@@ -55,7 +70,11 @@ workflows:
         notify:
           success: true
           failure: true
+      
       app_store_connect:
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        api_key: $APP_STORE_CONNECT_API_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+    
+    integrations:
+      app_store_connect: codemagic_integration
