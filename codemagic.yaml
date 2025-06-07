@@ -39,13 +39,13 @@ workflows:
           echo "列出现有证书..."
           app-store-connect certificates list --type IOS_DISTRIBUTION || true
           
-          # 撤销现有的iOS Distribution证书（如果存在）
+          # 撤销现有的iOS Distribution证书（使用正确的语法）
           echo "撤销现有证书..."
-          app-store-connect certificates delete --certificate-id BSQN86SNL8 || echo "证书撤销完成或不存在"
+          app-store-connect certificates delete BSQN86SNL8 || echo "证书撤销完成或不存在"
           
           # 等待一段时间确保撤销生效
           echo "等待证书撤销生效..."
-          sleep 10
+          sleep 15
           
           # 创建新的签名文件和证书
           echo "创建新的签名文件和证书..."
