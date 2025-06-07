@@ -13,9 +13,6 @@ workflows:
         - app_store_credentials
       xcode: latest
       cocoapods: default
-    # 移除 integrations 部分
-    # integrations:
-    #   app_store_connect: app_store_credentials
     triggering:
       events:
         - push
@@ -38,22 +35,19 @@ workflows:
           # 设置详细日志输出
           set -x
           
-          # 验证API连接
-          echo "验证App Store Connect API连接..."
-          app-store-connect get-latest-app-store-version $BUNDLE_ID || echo "API连接测试完成"
-          
           # 列出现有证书
           echo "列出现有证书..."
           app-store-connect certificates list --type IOS_DISTRIBUTION || true
           
-          # 尝试获取签名文件，如果失败则创建新的
-          echo "尝试获取现有签名文件..."
-          if ! app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE; then
-            echo "无法获取现有签名文件，创建新的签名文件..."
-            app-store-connect fetch-signing-files $BUNDLE_ID \
-              --type IOS_APP_STORE \
-              --create
-          fi
+          # 撤销现有的iOS Distribution证书（如果存在）
+          echo "撤销现有证书..."
+          app-store-connect certificates delete-certificate --certificate-id BSQN86SNL8 || echo "证书撤销完成或不存在"
+          
+          # 创建新的签名文件和证书
+          echo "创建新的签名文件和证书..."
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
       
       - name: 设置代码签名设置
         script: |
