@@ -1,56 +1,46 @@
 ---
 workflows:
   ios-workflow:
-    name: iOS Native App
+    name: iOS Workflow
     max_build_duration: 120
-    instance_type: mac_mini_m2
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.cydiabwcx.app.JSQ
       vars:
-        BUNDLE_ID: "com.cydiabwcx.app.JSQ"
         XCODE_PROJECT: "JSQ.xcodeproj"
         XCODE_SCHEME: "JSQ"
-      groups:
-        - app_store_credentials
-      xcode: latest
-      cocoapods: default
+        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...)
+        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...)
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...)
+        CERTIFICATE_PASSWORD: Encrypted(...)
     triggering:
       events:
         - push
         - tag
         - pull_request
       branch_patterns:
-        - pattern: 'main'
-          include: true
-          source: true
-        - pattern: 'develop'
+        - pattern: develop
           include: true
           source: true
     scripts:
-      - name: 设置 Keychain 用于代码签名
+      - name: 初始化 Keychain
         script: |
           keychain initialize
       
-      - name: 获取签名文件
-        script: |
-          set -x
-          echo "获取签名文件和配置文件..."
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
-            --create
-          
-          echo "验证配置文件..."
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          
-          echo "显示可用证书..."
-          security find-identity -v -p codesigning || true
-      
-      - name: 设置代码签名设置
-        script: |
-          xcode-project use-profiles
-      
       - name: 构建 iOS 应用
         script: |
-          # 强制使用自动签名
+          #!/usr/bin/env bash
+          set -e
+          
+          # 创建构建目录
+          mkdir -p build/ios/xcarchive
+          mkdir -p build/ios/ipa
+          
+          # 使用自动签名构建，添加 -allowProvisioningUpdates 参数
           xcodebuild -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
@@ -58,8 +48,10 @@ workflows:
             archive \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=2D7HH6DNF4 \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -allowProvisioningUpdates
           
+          # 导出 IPA
           xcodebuild -exportArchive \
             -archivePath build/ios/xcarchive/JSQ.xcarchive \
             -exportPath build/ios/ipa \
@@ -67,20 +59,11 @@ workflows:
     
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     
     publishing:
       email:
         recipients:
-          - gaozhenaax@163.com
+          - cydiabwcx@gmail.com
         notify:
           success: true
           failure: true
-      
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: false
-        submit_to_app_store: false
