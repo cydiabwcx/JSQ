@@ -35,14 +35,21 @@ workflows:
       
       - name: 获取签名文件
         script: |
-          # 首先尝试获取现有的签名文件（不创建新的）
+          # 设置详细日志输出
+          set -x
+          
+          # 验证API连接
+          echo "验证App Store Connect API连接..."
+          app-store-connect get-latest-app-store-version $BUNDLE_ID || echo "API连接测试完成"
+          
+          # 列出现有证书
+          echo "列出现有证书..."
+          app-store-connect certificates list --type IOS_DISTRIBUTION || true
+          
+          # 尝试获取签名文件，如果失败则创建新的
+          echo "尝试获取现有签名文件..."
           if ! app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE; then
-            echo "无法获取现有签名文件，尝试创建新的..."
-            # 如果失败，删除可能冲突的证书并重新创建
-            app-store-connect certificates list --type IOS_DISTRIBUTION | grep -q $BUNDLE_ID && \
-            app-store-connect certificates revoke --type IOS_DISTRIBUTION --bundle-id $BUNDLE_ID || true
-            
-            # 创建新的签名文件
+            echo "无法获取现有签名文件，创建新的签名文件..."
             app-store-connect fetch-signing-files $BUNDLE_ID \
               --type IOS_APP_STORE \
               --create
