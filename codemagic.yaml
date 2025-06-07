@@ -13,8 +13,9 @@ workflows:
         - app_store_credentials
       xcode: latest
       cocoapods: default
-    integrations:
-      app_store_connect: app_store_credentials
+    # 移除 integrations 部分
+    # integrations:
+    #   app_store_connect: app_store_credentials
     triggering:
       events:
         - push
@@ -62,6 +63,7 @@ workflows:
           failure: true
       
       app_store_connect:
-        auth: integration
+        # 改为使用环境变量认证
+        auth: api_key
         submit_to_testflight: false
         submit_to_app_store: false
