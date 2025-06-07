@@ -63,6 +63,9 @@ workflows:
           failure: true
       
       app_store_connect:
-        # 使用环境变量认证，无需指定 auth 字段
+        # 使用环境变量认证
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: false
