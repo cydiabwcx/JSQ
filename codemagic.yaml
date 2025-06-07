@@ -3,6 +3,8 @@ workflows:
     name: iOS Native App
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic_integration
     environment:
       groups:
         # 在 Codemagic UI 中添加环境变量组
