@@ -1,16 +1,86 @@
-Using Xcode 16.3 (16E140)
-Check JSQ.xcodeproj build settings
-Execute "xcodebuild -project JSQ.xcodeproj -scheme JSQ -config Release -showBuildSettings"
-
-Archive JSQ.xcodeproj
-Execute "xcodebuild -project JSQ.xcodeproj -scheme JSQ -config Release -archivePath /Users/builder/clone/build/ios/xcarchive/JSQ_rf4oua6n.xcarchive archive COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGN_STYLE=Manual"
-
-
-❌  /Users/builder/clone/JSQ.xcodeproj: error: "JSQ" requires a provisioning profile. Select a provisioning profile in the Signing & Capabilities editor. (in target 'JSQ' from project 'JSQ')
-
-
-Failed to archive JSQ.xcodeproj
-
-
-Build failed :|
-Step 5 script `构建 iOS 应用` exited with status code 65
+---
+workflows:
+  ios-workflow:
+    name: iOS Native App
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        BUNDLE_ID: "com.cydiabwcx.app.JSQ"
+        XCODE_PROJECT: "JSQ.xcodeproj"
+        XCODE_SCHEME: "JSQ"
+      groups:
+        - app_store_credentials
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+        - tag
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+        - pattern: 'develop'
+          include: true
+          source: true
+    scripts:
+      - name: 设置 Keychain 用于代码签名
+        script: |
+          keychain initialize
+      
+      - name: 获取签名文件
+        script: |
+          set -x
+          echo "获取签名文件和配置文件..."
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
+          
+          echo "验证配置文件..."
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          
+          echo "显示可用证书..."
+          security find-identity -v -p codesigning || true
+      
+      - name: 设置代码签名设置
+        script: |
+          xcode-project use-profiles
+      
+      - name: 构建 iOS 应用
+        script: |
+          # 强制使用自动签名
+          xcodebuild -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/ios/xcarchive/JSQ.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=2D7HH6DNF4 \
+            COMPILER_INDEX_STORE_ENABLE=NO
+          
+          xcodebuild -exportArchive \
+            -archivePath build/ios/xcarchive/JSQ.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ExportOptions.plist
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    
+    publishing:
+      email:
+        recipients:
+          - gaozhenaax@163.com
+        notify:
+          success: true
+          failure: true
+      
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: false
+        submit_to_app_store: false
