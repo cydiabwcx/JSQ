@@ -63,7 +63,6 @@ workflows:
           failure: true
       
       app_store_connect:
-        # 改为使用环境变量认证
-        auth: api_key
+        # 使用环境变量认证，无需指定 auth 字段
         submit_to_testflight: false
         submit_to_app_store: false
