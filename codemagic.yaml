@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       vars:
-        BUNDLE_ID: "com.cydiabwcx.JSQ"
+        BUNDLE_ID: "com.cydiabwcx.app.JSQ"
         XCODE_WORKSPACE: "JSQ.xcodeproj"
         XCODE_SCHEME: "JSQ"
         # 确保使用正确的环境变量名
