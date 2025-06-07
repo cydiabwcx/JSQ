@@ -10,7 +10,7 @@ workflows:
         XCODE_WORKSPACE: "JSQ.xcodeproj"
         XCODE_SCHEME: "JSQ"
       groups:
-        - app_store_credentials  # 引用环境变量组
+        - app_store_credentials
       xcode: latest
       cocoapods: default
     triggering:
@@ -30,10 +30,11 @@ workflows:
         script: |
           keychain initialize
       
-      # 移除“获取签名文件”脚本
-      - name: 使用系统默认 Keychain
+      - name: 获取签名文件
         script: |
-          keychain add-certificates
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
       
       - name: 设置代码签名设置
         script: |
@@ -58,4 +59,7 @@ workflows:
           success: true
           failure: true
       
-      # 移除 app_store_connect 配置，使用环境变量组
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
