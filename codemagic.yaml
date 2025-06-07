@@ -13,6 +13,8 @@ workflows:
         - app_store_credentials
       xcode: latest
       cocoapods: default
+    integrations:
+      app_store_connect: app_store_credentials
     triggering:
       events:
         - push
