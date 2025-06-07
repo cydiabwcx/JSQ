@@ -30,13 +30,7 @@ workflows:
         script: |
           keychain initialize
       
-      - name: 获取签名文件
-        script: |
-          # 使用简化的命令获取签名文件
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-      
+      # 移除“获取签名文件”脚本
       - name: 使用系统默认 Keychain
         script: |
           keychain add-certificates
