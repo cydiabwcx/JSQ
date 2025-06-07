@@ -3,8 +3,6 @@ workflows:
     name: iOS Native App
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: codemagic_integration
     environment:
       groups:
         # 在 Codemagic UI 中添加环境变量组
@@ -64,7 +62,10 @@ workflows:
           failure: true
       
       app_store_connect:
-        auth: integration # 使用 App Store Connect 集成
+        # 使用环境变量认证而不是集成
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        private_key: $APP_STORE_CONNECT_PRIVATE_KEY
         
         # 可选：自动提交审核
         # submit_to_testflight: false
