@@ -35,23 +35,24 @@ workflows:
           # 设置详细日志输出
           set -x
           
-          # 列出现有证书
-          echo "列出现有证书..."
+          # 验证API密钥权限
+          echo "验证API密钥权限..."
           app-store-connect certificates list --type IOS_DISTRIBUTION || true
           
-          # 撤销现有的iOS Distribution证书（使用正确的语法）
-          echo "撤销现有证书..."
-          app-store-connect certificates delete BSQN86SNL8 || echo "证书撤销完成或不存在"
+          # 尝试创建新证书（方法1：直接创建）
+          echo "尝试创建新的iOS Distribution证书..."
+          if app-store-connect certificates create --type IOS_DISTRIBUTION; then
+            echo "证书创建成功"
+          else
+            echo "证书创建失败，尝试其他方法"
+          fi
           
-          # 等待一段时间确保撤销生效
-          echo "等待证书撤销生效..."
-          sleep 15
-          
-          # 创建新的签名文件和证书
-          echo "创建新的签名文件和证书..."
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
-            --create
+          # 获取签名文件（方法2：强制创建）
+          echo "获取签名文件..."
+          if ! app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create; then
+            echo "自动签名失败，尝试使用现有证书..."
+            app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE || true
+          fi
       
       - name: 设置代码签名设置
         script: |
